@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import math
 import matplotlib.pyplot as plt
+import sympy as sp
 from tkinter import messagebox
 
 def evaluar_funcion(funcion, x):
@@ -28,8 +29,6 @@ def calcular_punto_fijo(g, x0, tolerancia, max_iter):
         xrold = xr
 
     raise ValueError("No se alcanzó la convergencia en el número máximo de iteraciones.")
-
-
 
 def abrir_biseccion():
     global entry_funcion_biseccion, entry_a, entry_b, entry_tolerancia_biseccion, tree_biseccion, label_resultado_biseccion
@@ -127,7 +126,6 @@ def calcular_biseccion():
     except Exception as e:
         label_resultado_biseccion.config(text=f"Error: {str(e)}")
 
-
 def graficar_biseccion(iteraciones):
     iteraciones_num = [i[0] for i in iteraciones]
     valores_c = [i[3] for i in iteraciones]
@@ -140,11 +138,6 @@ def graficar_biseccion(iteraciones):
     plt.grid(True)
     plt.legend()
     plt.show()
-
-
-
-
-
 
 def graficar(iteraciones):
     iteraciones_num = [i[0] for i in iteraciones]
@@ -235,6 +228,116 @@ def abrir_punto_fijo():
     label_resultado = tk.Label(ventana_punto_fijo, text="")
     label_resultado.grid(row=6, columnspan=2)
 
+
+def abrir_newton_raphson():
+    global entry_funcion_newton, entry_x0, entry_tolerancia_newton, tree_newton, label_resultado_newton
+
+    ventana_newton = tk.Toplevel(root)
+    ventana_newton.title("Método de Newton-Raphson")
+
+    # Entrada de la función
+    tk.Label(ventana_newton, text="Función f(x):").grid(row=0, column=0)
+    entry_funcion_newton = tk.Entry(ventana_newton)
+    entry_funcion_newton.grid(row=0, column=1)
+    entry_funcion_newton.insert(0, "x**3 - x - 2")  # Ejemplo de función por defecto
+
+    # Entrada para el valor inicial x0
+    tk.Label(ventana_newton, text="Valor inicial x0:").grid(row=1, column=0)
+    entry_x0 = tk.Entry(ventana_newton)
+    entry_x0.grid(row=1, column=1)
+    entry_x0.insert(0, "1.5")  # Valor por defecto
+
+    # Entrada para la tolerancia
+    tk.Label(ventana_newton, text="Tolerancia:").grid(row=2, column=0)
+    entry_tolerancia_newton = tk.Entry(ventana_newton)
+    entry_tolerancia_newton.grid(row=2, column=1)
+    entry_tolerancia_newton.insert(0, "0.001")  # Tolerancia por defecto
+
+    # Botón para ejecutar el cálculo
+    button_calcular_newton = tk.Button(ventana_newton, text="Calcular", command=calcular_newton_raphson)
+    button_calcular_newton.grid(row=3, columnspan=2)
+
+    # Tabla de resultados
+    tree_newton = ttk.Treeview(ventana_newton, columns=('Iteración', 'x0', 'f(x0)', 'f\'(x0)', 'x1'), show='headings')
+    tree_newton.heading('Iteración', text='Iteración')
+    tree_newton.heading('x0', text='x0')
+    tree_newton.heading('f(x0)', text='f(x0)')
+    tree_newton.heading('f\'(x0)', text="f'(x0)")
+    tree_newton.heading('x1', text='x1')
+    tree_newton.grid(row=4, columnspan=2)
+
+    # Resultado final
+    label_resultado_newton = tk.Label(ventana_newton, text="")
+    label_resultado_newton.grid(row=5, columnspan=2)
+
+def calcular_newton_raphson():
+    try:
+        # Definir la variable simbólica y la función
+        x = sp.symbols('x')
+        funcion = entry_funcion_newton.get().replace('^', '**')  # Reemplaza ^ con ** para Python
+        
+        # Convertir la función a expresión de SymPy
+        f_expr = sp.sympify(funcion)
+        
+        # Derivar la función automáticamente
+        df_expr = sp.diff(f_expr, x)
+        
+        # Convertir las expresiones en funciones evaluables
+        f = sp.lambdify(x, f_expr, "math")
+        df = sp.lambdify(x, df_expr, "math")
+        
+        # Obtener el valor inicial y la tolerancia
+        x0 = float(entry_x0.get())
+        tolerancia = float(entry_tolerancia_newton.get())
+
+        iteraciones_newton = []
+        iteracion = 1
+        
+        while True:
+            fx0 = f(x0)
+            dfx0 = df(x0)
+
+            if dfx0 == 0:
+                raise ValueError("La derivada se hizo cero. El método no puede continuar.")
+
+            x1 = x0 - fx0 / dfx0
+            iteraciones_newton.append((iteracion, x0, fx0, dfx0, x1))
+
+            if abs(x1 - x0) < tolerancia:
+                break
+
+            x0 = x1
+            iteracion += 1
+
+        # Mostrar los resultados en la tabla
+        for i in tree_newton.get_children():
+            tree_newton.delete(i)
+
+        for it in iteraciones_newton:
+            tree_newton.insert("", "end", values=it)
+
+        # Mostrar el resultado final
+        label_resultado_newton.config(text=f"Raíz aproximada: {x1:.6f}")
+
+        # Graficar la convergencia
+        graficar_newton(iteraciones_newton)
+
+    except Exception as e:
+        label_resultado_newton.config(text=f"Error: {str(e)}")
+
+def graficar_newton(iteraciones):
+    iteraciones_num = [i[0] for i in iteraciones]
+    valores_x1 = [i[4] for i in iteraciones]
+
+    plt.figure(figsize=(6, 4))
+    plt.plot(iteraciones_num, valores_x1, marker='o', label='Valor de x1')
+    plt.title('Convergencia del Método de Newton-Raphson')
+    plt.xlabel('Iteración')
+    plt.ylabel('Valor de x1')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
 def salir():
     root.quit()
 
@@ -249,6 +352,9 @@ def abrir_menu_metodos():
 
 
     button_biseccion = tk.Button(ventana_menu, text="Método de Bisección", command=abrir_biseccion)
+    button_biseccion.pack(pady=5)
+
+    button_biseccion = tk.Button(ventana_menu, text="Metodo Newton-Raphson", command=abrir_newton_raphson)
     button_biseccion.pack(pady=5)
 
     button_salir = tk.Button(ventana_menu, text="Salir", command=salir)
