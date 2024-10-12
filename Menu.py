@@ -227,7 +227,7 @@ def abrir_punto_fijo():
 
     label_resultado = tk.Label(ventana_punto_fijo, text="")
     label_resultado.grid(row=6, columnspan=2)
-
+    # hola
 
 def abrir_newton_raphson():
     global entry_funcion_newton, entry_x0, entry_tolerancia_newton, tree_newton, label_resultado_newton
