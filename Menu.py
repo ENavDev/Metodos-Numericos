@@ -7,45 +7,19 @@ from tkinter import messagebox
 import re
 
 
-def abrir_punto_fijo():
-    global entry_funcion, entry_x0, entry_tolerancia, entry_max_iter, tree, label_resultado
+# Función para preprocesar la función ingresada por el usuario
+def preprocesar_funcion(funcion):
+    # Reemplaza "^" por "**" para permitir potencias
+    funcion = funcion.replace("^", "**")
+    # Aquí puedes añadir más reemplazos si es necesario, por ejemplo:
+    # funcion = funcion.replace("sen", "sin")  # Reemplazar "sen" por "sin" si es necesario
+    # funcion = funcion.replace("log", "math.log")  # Reemplazar "log" por "math.log"
+    return funcion
 
-    ventana_punto_fijo = tk.Toplevel(root)
-    ventana_punto_fijo.title("Método de Punto Fijo")
-
-    tk.Label(ventana_punto_fijo, text="Función g(x):").grid(row=0, column=0)
-    entry_funcion = tk.Entry(ventana_punto_fijo)
-    entry_funcion.grid(row=0, column=1)
-    entry_funcion.insert(0, "0.5*(x + 2/x)")  # Usar la función como ejemplo
-
-    tk.Label(ventana_punto_fijo, text="Valor inicial x0:").grid(row=1, column=0)
-    entry_x0 = tk.Entry(ventana_punto_fijo)
-    entry_x0.grid(row=1, column=1)
-    entry_x0.insert(0, "1")  # Cambia el valor inicial según sea necesario
-
-    tk.Label(ventana_punto_fijo, text="Tolerancia:").grid(row=2, column=0)
-    entry_tolerancia = tk.Entry(ventana_punto_fijo)
-    entry_tolerancia.grid(row=2, column=1)
-    entry_tolerancia.insert(0, "1e-5")
-
-    tk.Label(ventana_punto_fijo, text="Máximo de iteraciones:").grid(row=3, column=0)
-    entry_max_iter = tk.Entry(ventana_punto_fijo)
-    entry_max_iter.grid(row=3, column=1)
-    entry_max_iter.insert(0, "100")
-
-    button_calcular = tk.Button(ventana_punto_fijo, text="Calcular", command=calcular)
-    button_calcular.grid(row=4, columnspan=2)
-
-    tree = ttk.Treeview(ventana_punto_fijo, columns=('Iteración', 'x', 'Error Absoluto'), show='headings')
-    tree.heading('Iteración', text='Iteración')
-    tree.heading('x', text='x')
-    tree.heading('Error Absoluto', text='Error Absoluto')
-    tree.grid(row=5, columnspan=2)
-
-    label_resultado = tk.Label(ventana_punto_fijo, text="")
-    label_resultado.grid(row=6, columnspan=2)
-
+# Función para evaluar la función matemática ingresada
 def evaluar_funcion(funcion, x):
+    funcion = preprocesar_funcion(funcion)  # Preprocesa la función antes de evaluarla
+    # Define el entorno de funciones matemáticas permitidas
     local_scope = {'x': x, 'sin': math.sin, 'cos': math.cos, 
                    'tan': math.tan, 'exp': math.exp, 'log': math.log, 
                    'sqrt': math.sqrt}
@@ -55,6 +29,7 @@ def evaluar_funcion(funcion, x):
     except Exception as e:
         raise ValueError(f"Error al evaluar la función: {str(e)}")
 
+# Función para graficar los resultados de la iteración
 def graficar(iteraciones):
     iteraciones_num = [i[0] for i in iteraciones]
     valores_x = [i[1] for i in iteraciones]
@@ -82,6 +57,46 @@ def graficar(iteraciones):
     plt.tight_layout()
     plt.show()
 
+# Función para abrir la ventana del método de punto fijo
+def abrir_punto_fijo():
+    global entry_funcion, entry_x0, entry_tolerancia, entry_max_iter, tree, label_resultado
+
+    ventana_punto_fijo = tk.Toplevel(root)
+    ventana_punto_fijo.title("Método de Punto Fijo")
+
+    tk.Label(ventana_punto_fijo, text="Función g(x):").grid(row=0, column=0)
+    entry_funcion = tk.Entry(ventana_punto_fijo)
+    entry_funcion.grid(row=0, column=1)
+    entry_funcion.insert(0, "0.5*(x + 2/x)")  # Función por defecto
+
+    tk.Label(ventana_punto_fijo, text="Valor inicial x0:").grid(row=1, column=0)
+    entry_x0 = tk.Entry(ventana_punto_fijo)
+    entry_x0.grid(row=1, column=1)
+    entry_x0.insert(0, "1")  # Valor inicial por defecto
+
+    tk.Label(ventana_punto_fijo, text="Tolerancia:").grid(row=2, column=0)
+    entry_tolerancia = tk.Entry(ventana_punto_fijo)
+    entry_tolerancia.grid(row=2, column=1)
+    entry_tolerancia.insert(0, "1e-5")  # Tolerancia por defecto
+
+    tk.Label(ventana_punto_fijo, text="Máximo de iteraciones:").grid(row=3, column=0)
+    entry_max_iter = tk.Entry(ventana_punto_fijo)
+    entry_max_iter.grid(row=3, column=1)
+    entry_max_iter.insert(0, "100")  # Máximo de iteraciones por defecto
+
+    button_calcular = tk.Button(ventana_punto_fijo, text="Calcular", command=calcular)
+    button_calcular.grid(row=4, columnspan=2)
+
+    tree = ttk.Treeview(ventana_punto_fijo, columns=('Iteración', 'x', 'Error Absoluto'), show='headings')
+    tree.heading('Iteración', text='Iteración')
+    tree.heading('x', text='x')
+    tree.heading('Error Absoluto', text='Error Absoluto')
+    tree.grid(row=5, columnspan=2)
+
+    label_resultado = tk.Label(ventana_punto_fijo, text="")
+    label_resultado.grid(row=6, columnspan=2)
+
+# Función para calcular el método de punto fijo
 def calcular():
     try:
         funcion = entry_funcion.get()
@@ -89,9 +104,12 @@ def calcular():
         tolerancia = float(entry_tolerancia.get())
         max_iter = int(entry_max_iter.get())
 
+        # Límite para evitar que los valores de x se vuelvan demasiado grandes
+        limite_maximo_x = 1e6  # Limitar los valores de x a 1 millón
+
         g = lambda x: evaluar_funcion(funcion, x)
 
-        resultado, iteraciones = calcular_punto_fijo(g, x0, tolerancia, max_iter)
+        resultado, iteraciones = calcular_punto_fijo(g, x0, tolerancia, max_iter, limite_maximo_x)
 
         for i in tree.get_children():
             tree.delete(i)
@@ -106,21 +124,27 @@ def calcular():
     except Exception as e:
         label_resultado.config(text=f"Error: {str(e)}")
 
-def calcular_punto_fijo(g, x0, tolerancia, max_iter):
+# Función para calcular el método de punto fijo
+def calcular_punto_fijo(g, x0, tolerancia, max_iter, limite_maximo_x):
     xrold = x0
     iteraciones = []
-    
+
     for i in range(max_iter):
         xr = g(xrold)
+        
+        # Si el valor de x se excede del límite máximo, detenemos la iteración
+        if abs(xr) > limite_maximo_x:
+            break
+        
         error = abs(xr - xrold)
         iteraciones.append((i + 1, xr, error))
-        
+
         if error < tolerancia:
             return xr, iteraciones
         
         xrold = xr
 
-    raise ValueError("No se alcanzó la convergencia en el número máximo de iteraciones.")
+    return xr, iteraciones  # Regresar el resultado hasta el punto donde terminó
 
 
 
@@ -344,6 +368,125 @@ def graficar_newton(iteraciones):
     plt.legend()
     plt.show()
 
+def abrir_secante():
+    global entry_funcion_secante, entry_x0_secante, entry_x1_secante, entry_tolerancia_secante, tree_secante, label_resultado_secante
+
+    ventana_secante = tk.Toplevel(root)
+    ventana_secante.title("Método de la Secante")
+
+    # Entrada de la función
+    tk.Label(ventana_secante, text="Función f(x):").grid(row=0, column=0)
+    entry_funcion_secante = tk.Entry(ventana_secante)
+    entry_funcion_secante.grid(row=0, column=1)
+    entry_funcion_secante.insert(0, "x**3 - x - 2")  # Ejemplo de función por defecto
+
+    # Entrada para el valor inicial x0
+    tk.Label(ventana_secante, text="Valor inicial x0:").grid(row=1, column=0)
+    entry_x0_secante = tk.Entry(ventana_secante)
+    entry_x0_secante.grid(row=1, column=1)
+    entry_x0_secante.insert(0, "1.5")  # Valor por defecto
+
+    # Entrada para el valor inicial x1
+    tk.Label(ventana_secante, text="Valor inicial x1:").grid(row=2, column=0)
+    entry_x1_secante = tk.Entry(ventana_secante)
+    entry_x1_secante.grid(row=2, column=1)
+    entry_x1_secante.insert(0, "2.0")  # Valor por defecto
+
+    # Entrada para la tolerancia
+    tk.Label(ventana_secante, text="Tolerancia:").grid(row=3, column=0)
+    entry_tolerancia_secante = tk.Entry(ventana_secante)
+    entry_tolerancia_secante.grid(row=3, column=1)
+    entry_tolerancia_secante.insert(0, "0.001")  # Tolerancia por defecto
+
+    # Botón para ejecutar el cálculo
+    button_calcular_secante = tk.Button(ventana_secante, text="Calcular", command=calcular_secante)
+    button_calcular_secante.grid(row=4, columnspan=2)
+
+    # Tabla de resultados
+    tree_secante = ttk.Treeview(ventana_secante, columns=('Iteración', 'x0', 'x1', 'f(x0)', 'f(x1)', 'Error'), show='headings')
+    tree_secante.heading('Iteración', text='Iteración')
+    tree_secante.heading('x0', text='x0')
+    tree_secante.heading('x1', text='x1')
+    tree_secante.heading('f(x0)', text='f(x0)')
+    tree_secante.heading('f(x1)', text='f(x1)')
+    tree_secante.heading('Error', text='Error')
+    tree_secante.grid(row=5, columnspan=2)
+
+    # Resultado final
+    label_resultado_secante = tk.Label(ventana_secante, text="")
+    label_resultado_secante.grid(row=6, columnspan=2)
+
+def calcular_secante():
+    try:
+        # Definir la variable simbólica y la función
+        x = sp.symbols('x')
+        funcion = entry_funcion_secante.get().replace('^', '**')  # Reemplaza ^ con ** para Python
+
+        # Convertir la función a expresión de SymPy
+        f_expr = sp.sympify(funcion)
+
+        # Convertir la expresión en una función evaluable
+        f = sp.lambdify(x, f_expr, "math")
+
+        # Obtener los valores iniciales y la tolerancia
+        x0 = float(entry_x0_secante.get())
+        x1 = float(entry_x1_secante.get())
+        tolerancia = float(entry_tolerancia_secante.get())
+
+        iteraciones_secante = []
+        iteracion = 1
+        
+        while True:
+            fx0 = f(x0)
+            fx1 = f(x1)
+
+            if fx1 == fx0:
+                raise ValueError("f(x1) y f(x0) son iguales, lo que produce una división por cero.")
+
+            # Fórmula de la secante
+            x2 = x1 - fx1 * (x1 - x0) / (fx1 - fx0)
+            error = abs(x2 - x1)
+            iteraciones_secante.append((iteracion, x0, x1, fx0, fx1, error))
+
+            # Verifica si el error es menor que la tolerancia
+            if error < tolerancia:
+                break
+
+            # Actualizar los valores para la siguiente iteración
+            x0, x1 = x1, x2
+            iteracion += 1
+
+        # Mostrar los resultados en la tabla
+        for i in tree_secante.get_children():
+            tree_secante.delete(i)
+
+        for it in iteraciones_secante:
+            tree_secante.insert("", "end", values=it)
+
+        # Mostrar el resultado final
+        label_resultado_secante.config(text=f"Raíz aproximada: {x2:.6f}")
+
+        # Graficar la convergencia
+        graficar_secante(iteraciones_secante)
+
+    except Exception as e:
+        label_resultado_secante.config(text=f"Error: {str(e)}")
+
+
+def graficar_secante(iteraciones):
+    iteraciones_num = [i[0] for i in iteraciones]
+    valores_x2 = [i[5] for i in iteraciones]
+
+    plt.figure(figsize=(6, 4))
+    plt.plot(iteraciones_num, valores_x2, marker='o', label='Valor de x2')
+    plt.title('Convergencia del Método de la Secante')
+    plt.xlabel('Iteración')
+    plt.ylabel('Valor de x2')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+
 def salir():
     root.quit()
 
@@ -356,15 +499,19 @@ def abrir_menu_metodos():
     button_punto_fijo = tk.Button(ventana_menu, text="Método de Punto Fijo", command=abrir_punto_fijo)
     button_punto_fijo.pack(pady=5)
 
-
     button_biseccion = tk.Button(ventana_menu, text="Método de Bisección", command=abrir_biseccion)
     button_biseccion.pack(pady=5)
 
-    button_biseccion = tk.Button(ventana_menu, text="Metodo Newton-Raphson", command=abrir_newton_raphson)
-    button_biseccion.pack(pady=5)
+    button_newton_raphson = tk.Button(ventana_menu, text="Método Newton-Raphson", command=abrir_newton_raphson)
+    button_newton_raphson.pack(pady=5)
+
+    # Botón para abrir el método de la Secante
+    button_secante = tk.Button(ventana_menu, text="Método de la Secante", command=abrir_secante)
+    button_secante.pack(pady=5)
 
     button_salir = tk.Button(ventana_menu, text="Salir", command=salir)
     button_salir.pack(pady=5)
+
 
 
 root = tk.Tk()
